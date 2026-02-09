@@ -1,15 +1,15 @@
 import torch
 
 X = torch.tensor([
-    [2.0],
+    [1.0],
     [5.0],
-    [10.0]
+    [9.0]
 ])
 
 Y = torch.tensor([
-    [9.0],
-    [1.0],
-    [3.0]
+    [5.0],
+    [8.0],
+    [2.0]
 ])
 
 w = torch.tensor([
@@ -20,21 +20,21 @@ b = torch.tensor([
     [0.0]
 ],requires_grad = True)
 
-epochs = 10000
+epochs = 50000
 lr = .01
 
 for epoch in range(epochs):
-    Yhat = X@w + b
-    r = Y - Yhat
+    Yhat = X@w+b
+    r = Yhat - Y  
     loss = r.T@r/3
+
     loss.backward()
     with torch.no_grad():
-        w -= lr*w.grad  
-        b -= lr*b.grad  
+        w -= lr*w.grad
+        b -= lr*b.grad
+    print(loss.item(),w,b)
 
     w.grad.zero_()
     b.grad.zero_()
 
-    print(loss.item(),w,b)
-
-print(w*7 + b)
+print(7.0*w+b)

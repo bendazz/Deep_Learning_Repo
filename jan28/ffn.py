@@ -23,4 +23,15 @@ Yhat = X@w + b
 r = Yhat - Y
 SSE = r.T@r
 loss = SSE/2
-print(loss.item())
+print(loss)
+
+
+
+import torch
+
+x = torch.tensor([
+    [5.0]
+],requires_grad = True)
+f = x**3
+f.backward()
+print(x.grad)
