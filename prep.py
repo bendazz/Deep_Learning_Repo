@@ -1,40 +1,44 @@
 import torch
+import torch.nn as nn
+import torch.optim as optim
+import pandas as pd
+import numpy as np
 
-X = torch.tensor([
-    [2.0],
-    [5.0],
-    [10.0]
-])
+data = pd.read_csv('data.csv')
 
-Y = torch.tensor([
-    [9.0],
-    [1.0],
-    [3.0]
-])
+#feet_mean = 1600
+#price_mean = 240
 
-w = torch.tensor([
-    [0.0]
-],requires_grad = True)
+#feet_std = 432.049380
+#price_mean = 64.807407
 
-b = torch.tensor([
-    [0.0]
-],requires_grad = True)
+df_stand = (data - data.mean())/data.std()
 
-epochs = 10000
-lr = .01
+X = torch.tensor(df_stand['Feet'].to_numpy().reshape(-1,1)).float()
+Y = torch.tensor(df_stand['Price'].to_numpy().reshape(-1,1)).float()
+
+model = nn.Linear(1,1)
+
+criterion = nn.MSELoss()
+optimizer = optim.SGD(model.parameters(),lr = .01)
+
+epochs = 1000
 
 for epoch in range(epochs):
-    Yhat = X@w + b
-    r = Y - Yhat
-    loss = r.T@r/3
+    Yhat = model(X)
+    loss = criterion(Yhat,Y)
     loss.backward()
-    with torch.no_grad():
-        w -= lr*w.grad  
-        b -= lr*b.grad  
+    optimizer.step()
+    optimizer.zero_grad()
+    
 
-    w.grad.zero_()
-    b.grad.zero_()
+torch.save(
+    {
+        'model_state_dict':model.state_dict(),
+        'feet_mean' : torch.tensor([[1600.0]]),
+        'price_mean' : torch.tensor([[240.0]]),
+        'feet_std' : torch.tensor([[432.049380]]),
+        'price_std' :torch.tensor([[64.807407]]),
 
-    print(loss.item(),w,b)
-
-print(w*7 + b)
+    }, 'model.pth'
+)
