@@ -1,0 +1,18 @@
+Size (cm),Diagnosis
+0.5,Benign
+0.9,Benign
+1,Benign
+1.2,Benign
+1.5,Benign
+1.8,Benign
+2,Benign
+2.1,Benign
+2.5,Benign
+3,Malignant
+3.2,Malignant
+3.5,Malignant
+3.8,Malignant
+4,Malignant
+4.5,Malignant
+5,Malignant
+5.5,Malignant
