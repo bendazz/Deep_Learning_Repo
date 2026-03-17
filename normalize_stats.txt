@@ -1,0 +1,32 @@
+Common Precomputed Normalization Statistics for transforms.Normalize()
+=====================================================================
+
+MNIST (grayscale, 1 channel)
+  mean: (0.1307,)
+  std:  (0.3081,)
+
+  transforms.Normalize((0.1307,), (0.3081,))
+
+Fashion-MNIST (grayscale, 1 channel)
+  mean: (0.2860,)
+  std:  (0.3530,)
+
+  transforms.Normalize((0.2860,), (0.3530,))
+
+CIFAR-10 (RGB, 3 channels)
+  mean: (0.4914, 0.4822, 0.4465)
+  std:  (0.2470, 0.2435, 0.2616)
+
+  transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2470, 0.2435, 0.2616))
+
+CIFAR-100 (RGB, 3 channels)
+  mean: (0.5071, 0.4867, 0.4408)
+  std:  (0.2675, 0.2565, 0.2761)
+
+  transforms.Normalize((0.5071, 0.4867, 0.4408), (0.2675, 0.2565, 0.2761))
+
+ImageNet (RGB, 3 channels)
+  mean: (0.485, 0.456, 0.406)
+  std:  (0.229, 0.224, 0.225)
+
+  transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))
