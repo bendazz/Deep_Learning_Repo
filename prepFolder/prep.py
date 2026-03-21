@@ -27,10 +27,10 @@ loader = DataLoader(
     shuffle=True
 )
 
-# for i,(image,label) in enumerate(loader):
-#     save_image_grid(image)
-#     if i == 9:
-#         break
+for i,(image,label) in enumerate(loader):
+    save_image_grid(image)
+    if i == 9:
+        break
 
 model = nn.Sequential(
     nn.Flatten(),
