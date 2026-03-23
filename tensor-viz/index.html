@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Batch Through a Network</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: #0f172a;
+    color: #e2e8f0;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 2rem;
+  }
+
+  h1 {
+    font-size: 1.8rem;
+    margin-bottom: 0.3rem;
+    color: #f8fafc;
+  }
+
+  .subtitle {
+    color: #94a3b8;
+    margin-bottom: 1.5rem;
+    font-size: 1rem;
+  }
+
+  .controls {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+  }
+
+  .control-group {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .control-group label {
+    font-size: 0.9rem;
+    color: #94a3b8;
+  }
+
+  .control-group select {
+    background: #1e293b;
+    color: #e2e8f0;
+    border: 1px solid #334155;
+    border-radius: 6px;
+    padding: 0.4rem 0.6rem;
+    font-size: 0.9rem;
+  }
+
+  .diagram {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+    padding: 1rem;
+  }
+
+  /* Matrix styles */
+  .matrix-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .matrix-title {
+    font-size: 0.8rem;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .matrix-wrap {
+    display: flex;
+    align-items: center;
+  }
+
+  .bracket {
+    font-size: 3rem;
+    color: #475569;
+    font-weight: 100;
+    line-height: 1;
+    user-select: none;
+  }
+
+  .matrix-grid {
+    display: grid;
+    gap: 2px;
+    padding: 4px;
+  }
+
+  .matrix-cell {
+    width: 8px;
+    height: 8px;
+    border-radius: 1px;
+  }
+
+  .cell-input { background: #3b82f6; opacity: 0.5; }
+  .cell-input.row-highlight { opacity: 1; background: #60a5fa; }
+  .cell-output { background: #a78bfa; opacity: 0.5; }
+  .cell-output.row-highlight { opacity: 1; background: #c4b5fd; }
+  .cell-output.argmax { outline: 2px solid #fbbf24; background: #fbbf24; opacity: 1; }
+
+  /* Comparison section */
+  .compare-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .compare-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .compare-label-text {
+    font-size: 0.7rem;
+    color: #94a3b8;
+    font-family: monospace;
+    min-width: 35px;
+    text-align: right;
+  }
+
+  .compare-bracket {
+    font-size: 1.2rem;
+    color: #475569;
+    font-weight: 100;
+    user-select: none;
+  }
+
+  .compare-cells {
+    display: flex;
+    gap: 2px;
+  }
+
+  .compare-cell {
+    width: 14px;
+    height: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 8px;
+    font-family: monospace;
+    font-weight: 600;
+    border-radius: 2px;
+  }
+
+  .compare-pred { background: #fbbf24; color: #0f172a; }
+  .compare-label { background: #64748b; color: #e2e8f0; }
+  .compare-op { color: #94a3b8; font-size: 0.9rem; font-family: monospace; }
+  .compare-match { background: #22c55e; color: #0f172a; }
+  .compare-miss { background: #ef4444; color: #fff; }
+
+  .matrix-shape {
+    font-family: monospace;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #60a5fa;
+    margin-top: 0.25rem;
+  }
+
+  .matrix-shape.output { color: #a78bfa; }
+
+  .row-labels {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 4px 0;
+    margin-right: 4px;
+  }
+
+  .row-label {
+    height: 8px;
+    font-size: 6px;
+    line-height: 8px;
+    color: #64748b;
+    text-align: right;
+  }
+
+  .row-label.row-highlight { color: #fbbf24; font-weight: bold; }
+
+  /* Arrow between sections */
+  .flow-arrow {
+    color: #475569;
+    font-size: 1.8rem;
+    flex-shrink: 0;
+  }
+
+  /* Network diagram */
+  .network-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .network-title {
+    font-size: 0.8rem;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  svg.network {
+    overflow: visible;
+  }
+
+  /* Insight box */
+  .insight {
+    max-width: 700px;
+    margin-top: 2rem;
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    padding: 1.2rem;
+    font-size: 0.9rem;
+    line-height: 1.6;
+    color: #cbd5e1;
+  }
+
+  .insight strong { color: #fbbf24; }
+  .insight code {
+    background: #334155;
+    padding: 0.15rem 0.4rem;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    color: #7dd3fc;
+  }
+
+  .legend {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    margin-top: 1.5rem;
+    flex-wrap: wrap;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+    color: #94a3b8;
+  }
+
+  .legend-swatch {
+    width: 14px;
+    height: 14px;
+    border-radius: 3px;
+  }
+</style>
+</head>
+<body>
+
+<h1>Batch Through a Network</h1>
+<p class="subtitle">One batch in, one batch out &mdash; rows are samples all the way through</p>
+
+<div class="controls">
+  <div class="control-group">
+    <label for="batch-size">Batch size:</label>
+    <select id="batch-size">
+      <option value="4">4</option>
+      <option value="8" selected>8</option>
+      <option value="16">16</option>
+    </select>
+  </div>
+  <div class="control-group">
+    <label for="highlight-sample">Highlight sample:</label>
+    <select id="highlight-sample"></select>
+  </div>
+</div>
+
+<div class="diagram" id="diagram"></div>
+
+<div class="legend">
+  <div class="legend-item">
+    <div class="legend-swatch" style="background:#3b82f6;"></div>
+    Input features (pixels)
+  </div>
+  <div class="legend-item">
+    <div class="legend-swatch" style="background:#a78bfa;"></div>
+    Output scores (10 classes)
+  </div>
+  <div class="legend-item">
+    <div class="legend-swatch" style="background:#fbbf24; width:10px; height:10px; outline:2px solid #fbbf24;"></div>
+    Argmax (predicted class)
+  </div>
+  <div class="legend-item">
+    <div class="legend-swatch" style="background:#22c55e;"></div>
+    Correct
+  </div>
+  <div class="legend-item">
+    <div class="legend-swatch" style="background:#ef4444;"></div>
+    Wrong
+  </div>
+</div>
+
+<div class="insight">
+  <strong>Key idea:</strong> Each row of the input matrix is one sample &mdash;
+  a flattened 28&times;28 image, so 784 columns (pixels). The network transforms
+  each row independently through its layers. The output matrix has the same number
+  of rows (one per sample) but only <code>10</code> columns &mdash; one score per class.
+  The shape goes from <code>(batch, 784)</code> to <code>(batch, 10)</code>.
+</div>
+
+<script>
+const INPUT_COLS_DISPLAY = 28;  // show 28 cols to suggest "pixels"
+const OUTPUT_COLS = 10;
+
+function render() {
+  const batchSize = parseInt(document.getElementById('batch-size').value);
+
+  // Populate highlight dropdown
+  const highlightSelect = document.getElementById('highlight-sample');
+  const prevVal = parseInt(highlightSelect.value) || 0;
+  highlightSelect.innerHTML = '';
+  for (let i = 0; i < batchSize; i++) {
+    const opt = document.createElement('option');
+    opt.value = i; opt.textContent = i;
+    if (i === Math.min(prevVal, batchSize - 1)) opt.selected = true;
+    highlightSelect.appendChild(opt);
+  }
+  const highlightIdx = Math.min(prevVal, batchSize - 1);
+
+  const diagram = document.getElementById('diagram');
+  diagram.innerHTML = '';
+
+  // --- Input matrix ---
+  diagram.appendChild(buildMatrix(
+    'Input batch', batchSize, INPUT_COLS_DISPLAY, 'cell-input',
+    `(${batchSize}, 784)`, '', highlightIdx
+  ));
+
+  // Arrow
+  diagram.appendChild(makeArrow());
+
+  // --- Network SVG ---
+  diagram.appendChild(buildNetwork(batchSize, highlightIdx));
+
+  // Arrow
+  diagram.appendChild(makeArrow());
+
+  // --- Output matrix (with random argmax per row) ---
+  const argmaxCols = [];
+  for (let r = 0; r < batchSize; r++) {
+    argmaxCols.push(Math.floor(Math.random() * OUTPUT_COLS));
+  }
+  diagram.appendChild(buildMatrix(
+    'Output', batchSize, OUTPUT_COLS, 'cell-output',
+    `(${batchSize}, 10)`, 'output', highlightIdx, argmaxCols
+  ));
+
+  // Arrow
+  diagram.appendChild(makeArrow());
+
+  // --- Comparison: argmax == labels ---
+  const labels = [];
+  for (let r = 0; r < batchSize; r++) {
+    labels.push(Math.floor(Math.random() * OUTPUT_COLS));
+  }
+  diagram.appendChild(buildComparison(argmaxCols, labels));
+}
+
+function buildMatrix(title, rows, cols, cellClass, shapeText, shapeClass, highlightRow, argmaxCols) {
+  const section = document.createElement('div');
+  section.className = 'matrix-section';
+
+  const titleEl = document.createElement('div');
+  titleEl.className = 'matrix-title';
+  titleEl.textContent = title;
+
+  const wrap = document.createElement('div');
+  wrap.className = 'matrix-wrap';
+
+  // Left bracket
+  const lb = document.createElement('div');
+  lb.className = 'bracket';
+  lb.textContent = '[';
+
+  // Row labels
+  const rowLabels = document.createElement('div');
+  rowLabels.className = 'row-labels';
+  for (let r = 0; r < rows; r++) {
+    const rl = document.createElement('div');
+    rl.className = 'row-label' + (r === highlightRow ? ' row-highlight' : '');
+    rl.textContent = 's' + r;
+    rowLabels.appendChild(rl);
+  }
+
+  // Grid
+  const grid = document.createElement('div');
+  grid.className = 'matrix-grid';
+  grid.style.gridTemplateColumns = `repeat(${cols}, 8px)`;
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const cell = document.createElement('div');
+      cell.className = 'matrix-cell ' + cellClass;
+      if (r === highlightRow) cell.classList.add('row-highlight');
+      if (argmaxCols && c === argmaxCols[r]) cell.classList.add('argmax');
+      grid.appendChild(cell);
+    }
+  }
+
+  // Right bracket
+  const rb = document.createElement('div');
+  rb.className = 'bracket';
+  rb.textContent = ']';
+
+  wrap.appendChild(lb);
+  wrap.appendChild(rowLabels);
+  wrap.appendChild(grid);
+  wrap.appendChild(rb);
+
+  const shape = document.createElement('div');
+  shape.className = 'matrix-shape' + (shapeClass ? ' ' + shapeClass : '');
+  shape.textContent = shapeText;
+
+  section.appendChild(titleEl);
+  section.appendChild(wrap);
+  section.appendChild(shape);
+  return section;
+}
+
+function makeArrow() {
+  const a = document.createElement('div');
+  a.className = 'flow-arrow';
+  a.textContent = '→';
+  return a;
+}
+
+function buildNetwork(batchSize, highlightIdx) {
+  const section = document.createElement('div');
+  section.className = 'network-section';
+
+  const title = document.createElement('div');
+  title.className = 'network-title';
+  title.textContent = 'Neural network';
+
+  // SVG network
+  const svgNS = 'http://www.w3.org/2000/svg';
+  const inputNodes = 6;   // show 6 with "..." to suggest 784
+  const hiddenDots = 3;   // just dots to suggest hidden layers
+  const outputNodes = 10;
+
+  const layerX = [40, 120, 200, 280];  // input, hidden-indicator-1, hidden-indicator-2, output
+  const svgW = 320;
+  const svgH = 200;
+
+  const svg = document.createElementNS(svgNS, 'svg');
+  svg.setAttribute('class', 'network');
+  svg.setAttribute('width', svgW);
+  svg.setAttribute('height', svgH);
+
+  // Positions
+  function nodeYs(count, height) {
+    const arr = [];
+    const gap = height / (count + 1);
+    for (let i = 0; i < count; i++) arr.push(gap * (i + 1));
+    return arr;
+  }
+
+  const inputYs = nodeYs(inputNodes, svgH);
+  const outputYs = nodeYs(outputNodes, svgH);
+
+  // Draw connections: input → output (fanning through middle)
+  // Light lines from each input to each output to suggest full connectivity
+  inputYs.forEach(iy => {
+    outputYs.forEach(oy => {
+      const line = document.createElementNS(svgNS, 'line');
+      line.setAttribute('x1', layerX[0]); line.setAttribute('y1', iy);
+      line.setAttribute('x2', layerX[3]); line.setAttribute('y2', oy);
+      line.setAttribute('stroke', '#1e3a5f');
+      line.setAttribute('stroke-width', '0.5');
+      svg.appendChild(line);
+    });
+  });
+
+  // Hidden layer indicators (two columns of dots in the middle)
+  [layerX[1], layerX[2]].forEach(x => {
+    for (let i = 0; i < hiddenDots; i++) {
+      const dot = document.createElementNS(svgNS, 'circle');
+      const y = svgH / 2 - (hiddenDots - 1) * 12 / 2 + i * 12;
+      dot.setAttribute('cx', x);
+      dot.setAttribute('cy', y);
+      dot.setAttribute('r', 3);
+      dot.setAttribute('fill', '#475569');
+      svg.appendChild(dot);
+    }
+    // label
+    const txt = document.createElementNS(svgNS, 'text');
+    txt.setAttribute('x', x);
+    txt.setAttribute('y', svgH / 2 + 30);
+    txt.setAttribute('text-anchor', 'middle');
+    txt.setAttribute('fill', '#64748b');
+    txt.setAttribute('font-size', '9');
+    txt.textContent = '...';
+    svg.appendChild(txt);
+  });
+
+  // "hidden layers" label spanning the middle
+  const hlLabel = document.createElementNS(svgNS, 'text');
+  hlLabel.setAttribute('x', (layerX[1] + layerX[2]) / 2);
+  hlLabel.setAttribute('y', svgH - 5);
+  hlLabel.setAttribute('text-anchor', 'middle');
+  hlLabel.setAttribute('fill', '#64748b');
+  hlLabel.setAttribute('font-size', '10');
+  hlLabel.textContent = 'hidden layers';
+  svg.appendChild(hlLabel);
+
+  // Input nodes
+  inputYs.forEach((y, i) => {
+    const circle = document.createElementNS(svgNS, 'circle');
+    circle.setAttribute('cx', layerX[0]);
+    circle.setAttribute('cy', y);
+    circle.setAttribute('r', 7);
+    circle.setAttribute('fill', '#1e293b');
+    circle.setAttribute('stroke', '#3b82f6');
+    circle.setAttribute('stroke-width', '1.5');
+    svg.appendChild(circle);
+
+    // Ellipsis indicator after 3rd node
+    if (i === 2) {
+      const dots = document.createElementNS(svgNS, 'text');
+      dots.setAttribute('x', layerX[0]);
+      dots.setAttribute('y', y + 2);
+      dots.setAttribute('text-anchor', 'middle');
+      dots.setAttribute('fill', '#64748b');
+      dots.setAttribute('font-size', '10');
+      dots.textContent = '⋯';
+      svg.appendChild(dots);
+    }
+  });
+
+  // "784" label under input nodes
+  const inLabel = document.createElementNS(svgNS, 'text');
+  inLabel.setAttribute('x', layerX[0]);
+  inLabel.setAttribute('y', svgH - 5);
+  inLabel.setAttribute('text-anchor', 'middle');
+  inLabel.setAttribute('fill', '#60a5fa');
+  inLabel.setAttribute('font-size', '10');
+  inLabel.textContent = '784';
+  svg.appendChild(inLabel);
+
+  // Output nodes
+  outputYs.forEach((y, i) => {
+    const circle = document.createElementNS(svgNS, 'circle');
+    circle.setAttribute('cx', layerX[3]);
+    circle.setAttribute('cy', y);
+    circle.setAttribute('r', 7);
+    circle.setAttribute('fill', '#1e293b');
+    circle.setAttribute('stroke', '#a78bfa');
+    circle.setAttribute('stroke-width', '1.5');
+    svg.appendChild(circle);
+
+    // Digit label inside
+    const lbl = document.createElementNS(svgNS, 'text');
+    lbl.setAttribute('x', layerX[3]);
+    lbl.setAttribute('y', y + 3);
+    lbl.setAttribute('text-anchor', 'middle');
+    lbl.setAttribute('fill', '#c4b5fd');
+    lbl.setAttribute('font-size', '8');
+    lbl.textContent = i;
+    svg.appendChild(lbl);
+  });
+
+  // "10" label under output nodes
+  const outLabel = document.createElementNS(svgNS, 'text');
+  outLabel.setAttribute('x', layerX[3]);
+  outLabel.setAttribute('y', svgH - 5);
+  outLabel.setAttribute('text-anchor', 'middle');
+  outLabel.setAttribute('fill', '#a78bfa');
+  outLabel.setAttribute('font-size', '10');
+  outLabel.textContent = '10';
+  svg.appendChild(outLabel);
+
+  section.appendChild(title);
+  section.appendChild(svg);
+  return section;
+}
+
+function buildComparison(preds, labels) {
+  const section = document.createElement('div');
+  section.className = 'compare-section';
+
+  const title = document.createElement('div');
+  title.className = 'matrix-title';
+  title.textContent = 'output.argmax(1) == labels';
+
+  // Helper: build a horizontal row-vector with brackets
+  function makeRow(label, values, cellClass) {
+    const row = document.createElement('div');
+    row.className = 'compare-row';
+    const lbl = document.createElement('div');
+    lbl.className = 'compare-label-text';
+    lbl.textContent = label;
+    const lb = document.createElement('div');
+    lb.className = 'compare-bracket';
+    lb.textContent = '[';
+    const cells = document.createElement('div');
+    cells.className = 'compare-cells';
+    values.forEach(v => {
+      const cell = document.createElement('div');
+      cell.className = 'compare-cell ' + cellClass;
+      cell.textContent = v;
+      cells.appendChild(cell);
+    });
+    const rb = document.createElement('div');
+    rb.className = 'compare-bracket';
+    rb.textContent = ']';
+    row.appendChild(lbl);
+    row.appendChild(lb);
+    row.appendChild(cells);
+    row.appendChild(rb);
+    return row;
+  }
+
+  // pred row
+  section.appendChild(title);
+  section.appendChild(makeRow('pred', preds, 'compare-pred'));
+
+  // == operator
+  const eqRow = document.createElement('div');
+  eqRow.className = 'compare-row';
+  const eqSpacer = document.createElement('div');
+  eqSpacer.className = 'compare-label-text';
+  const eqSign = document.createElement('div');
+  eqSign.className = 'compare-op';
+  eqSign.textContent = '==';
+  eqRow.appendChild(eqSpacer);
+  eqRow.appendChild(eqSign);
+  section.appendChild(eqRow);
+
+  // labels row
+  section.appendChild(makeRow('labels', labels, 'compare-label'));
+
+  // result row
+  const results = preds.map((p, i) => p === labels[i]);
+  const resultVals = results.map(m => m ? 'T' : 'F');
+  const resultRow = document.createElement('div');
+  resultRow.className = 'compare-row';
+  const resLabel = document.createElement('div');
+  resLabel.className = 'compare-label-text';
+  const resLb = document.createElement('div');
+  resLb.className = 'compare-bracket';
+  resLb.textContent = '[';
+  const resCells = document.createElement('div');
+  resCells.className = 'compare-cells';
+  results.forEach(m => {
+    const cell = document.createElement('div');
+    cell.className = 'compare-cell ' + (m ? 'compare-match' : 'compare-miss');
+    cell.textContent = m ? 'T' : 'F';
+    resCells.appendChild(cell);
+  });
+  const resRb = document.createElement('div');
+  resRb.className = 'compare-bracket';
+  resRb.textContent = ']';
+  resultRow.appendChild(resLabel);
+  resultRow.appendChild(resLb);
+  resultRow.appendChild(resCells);
+  resultRow.appendChild(resRb);
+  section.appendChild(resultRow);
+
+  // Accuracy
+  const correct = results.filter(Boolean).length;
+  const accEl = document.createElement('div');
+  accEl.className = 'matrix-shape';
+  accEl.style.color = '#22c55e';
+  accEl.textContent = `${correct}/${preds.length} correct`;
+  section.appendChild(accEl);
+
+  return section;
+}
+
+document.getElementById('batch-size').addEventListener('change', render);
+document.getElementById('highlight-sample').addEventListener('change', render);
+render();
+</script>
+</body>
+</html>

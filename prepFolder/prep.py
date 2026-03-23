@@ -27,6 +27,22 @@ loader = DataLoader(
     shuffle=True
 )
 
+test_dataset = datasets.MNIST(
+    root = './data',
+    train = False,
+    download = True,
+    transform = transforms.Compose([
+        transforms.ToTensor(),
+        transforms.Normalize((0.1307,),(0.3081,))
+    ])
+)
+
+test_loader = DataLoader(
+    test_dataset,
+    batch_size = 1000,
+    shuffle=False
+)
+
 for i,(image,label) in enumerate(loader):
     save_image_grid(image)
     if i == 9:
@@ -43,15 +59,31 @@ model = nn.Sequential(
 
 criterion = nn.CrossEntropyLoss()
 optimizer = torch.optim.Adam(model.parameters(), lr = .001)
-epochs = 5
+epochs = 10
 
-for epoch in range(5):
+for epoch in range(10):
+    total_loss = 0
+    correct = 0
+    total = 0
     for images, labels in loader:
         output = model(images)
         loss = criterion(output,labels)
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
-    print(loss)
+        total_loss += loss.item()
+        correct += (output.argmax(1) == labels).sum().item()
+        total += labels.size(0)
+    # Test accuracy
+    model.eval()
+    test_correct = 0
+    test_total = 0
+    with torch.no_grad():
+        for images, labels in test_loader:
+            output = model(images)
+            test_correct += (output.argmax(1) == labels).sum().item()
+            test_total += labels.size(0)
+    model.train()
+    print(f"Epoch {epoch+1}  Loss: {total_loss/len(loader):.4f}  Train Acc: {correct/total:.4f}  Test Acc: {test_correct/test_total:.4f}")
 
 
