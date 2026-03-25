@@ -86,4 +86,4 @@ for epoch in range(10):
     model.train()
     print(f"Epoch {epoch+1}  Loss: {total_loss/len(loader):.4f}  Train Acc: {correct/total:.4f}  Test Acc: {test_correct/test_total:.4f}")
 
-
+torch.save(model.state_dict(), 'mnist_model.pth')
