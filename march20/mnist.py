@@ -26,7 +26,7 @@ loader = DataLoader(
     shuffle = True
 )
 
-DataLoader(
+test_loader = DataLoader(
     test_dataset,
     batch_size = 1000,
     shuffle = False
@@ -58,4 +58,14 @@ for epoch in range(epochs):
         total_loss += loss.item()
         total += labels.size(0)
         correct += (output.argmax(1) == labels).sum().item()
-    print (f"Epoch: {epoch},Loss: {total_loss/len(loader)},Accuracy: {correct/total}")
+    test_correct = 0
+    test_total = 0
+    with torch.no_grad():
+        for images, labels in test_loader:
+            output = model(images)
+            test_correct += (output.argmax(1) == labels).sum().item()
+            test_total += labels.size(0)
+
+    print (f"Epoch: {epoch},Loss: {total_loss/len(loader):.4f},Accuracy: {correct/total:.4f}, Test Acc: {test_correct/test_total:.4f}")
+
+torch.save(model.state_dict(),'model.pth')
