@@ -6,14 +6,14 @@ from torch.utils.data import DataLoader
 
 torch.manual_seed(1)
 
-dataset = datasets.MNIST(
+dataset = datasets.CIFAR10(
     root = './data',
     train = True,
     download = True,
     transform = transforms.ToTensor()
 )
 
-test_dataset = datasets.MNIST(
+test_dataset = datasets.CIFAR10(
     root = './data',
     train = False,
     download = True,
@@ -34,7 +34,7 @@ test_loader = DataLoader(
 
 model = nn.Sequential(
     nn.Flatten(),
-    nn.Linear(784,128),
+    nn.Linear(3072,128),
     nn.ReLU(),
     nn.Linear(128,64),
     nn.ReLU(),
